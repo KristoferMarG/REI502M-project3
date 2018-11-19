@@ -44,7 +44,7 @@ Without any preprocessing our data set has 214 different instances that each con
 
 #Preprocessing
 
-We began by looking at all our attributes and noticed that the first one **Id** is completely useless to us because it only numbers the instances which we don't need. We also noticed that the class attributes never results to the glass being *vehicle_windows_non_float_processed* for this dataset so we should get one fewer clusters in the final result. All other attributes seem like they might have some interesting information so we include them. 
+We began by looking at all our attributes and noticed that the first one **Id** is completely useless to us because it only numbers the instances which we don't need. We also noticed that the class attributes never results to the glass being *vehicle_windows_non_float_processed* for this dataset so we should get one fewer clusters in the final result. All other attributes seem like they might have some interesting information so we include them. It is also imperative to normalize the scale of feature values in order to begin with the clustering process. This is because each observations' feature values are represented as coordinates in n-dimensional space
 
 
 
@@ -57,13 +57,14 @@ glass <- read.csv("glass.csv")
 # remove the Id attribute
 glass <- glass[2:11]
 
-
+# normalizing the attributes
+glass <- scale(glass)
 
 ```
 
 ### 3. K-means clustering
 
-Now that we have finished preprocessing the next step is to run the k-means algorithm but first we need to find what number of clusters will give us the best result we accomplish this by plotting the sum of squares and seeing when the drop decreases. Since the initial cluster assignments are random, we need to set the seed to ensure reproducibility. 
+Now that we have finished preprocessing the next step is to run the k-means algorithm but first we need to find what number of clusters that will give us the best result we accomplish this by plotting the sum of squares and seeing when the drop decreases. Since the initial cluster assignments are random, we need to set the seed to ensure reproducibility. 
 By plotting the sum of squares we can see that the drop of the y-axis decreases when the number of clusters is 6 this is ideal because the possible types of glass is also 6. 
 
 
@@ -79,13 +80,13 @@ plot(1:15, wss, type="b", xlab="Number of Clusters", ylab="sum of squares")
 # Ensuring reproducibility
 set.seed(20)
 # running k-means 
-glassCluster <- kmeans(glass, 6, nstart = 20, iter.max=100)
+glassClusterKmeans <- kmeans(glass, 6, nstart = 20, iter.max=100)
 
 
 ```
 
  
-We used Principal component analysis (PCA) algorithm in **clusplot** to plot and view the clusters. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables.
+We used Principal component analysis (PCA) algorithm in **clusplot** to plot and view the clusters after the k-means algorithm. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables.
 
 ```{r hierarchical}
 
@@ -96,19 +97,20 @@ We used Principal component analysis (PCA) algorithm in **clusplot** to plot and
 
 
 # plotting the clusters
-clusplot(glass, glassCluster$cluster,
+clusplot(glass, glassClusterKmeans$cluster,
          main='Cluster solution',
          color=TRUE, shade=TRUE, labels=2, lines=0)
 
 
-# reviewing the total sum of errors 
-sum(glassCluster$withinss)
+# reviewing the total sum of squared errors  
+glass_kmeans_error <- sum(glassClusterKmeans$withinss)
+
 
 
 
 ```
 
-59.03% of variability says that, with our data, more than half of the information about the multivariate data is captured by this plot of components 1 and 2.
+53.47% of variability says that, with our data, more than half of the information about the multivariate data is captured by this plot of components 1 and 2.
 
 
 
