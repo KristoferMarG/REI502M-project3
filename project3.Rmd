@@ -14,49 +14,37 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(cluster)
-
+library(merTools)
 ```
 
 ### 1. Objectives
 
+Our main obective was to determine with the highest possible accuracy what type of glass is found. Our ideal results would include 7 well defined clusters where each cluster would represent a glass type. The reason this can be found usefull is because of criminological investigations. Where at a scene of a crime glass can be correctly identified and possibly be used as valuable evidence.
+
+
+
 
 ### 2. Data set description
 
-The data set has 400 different instances that each contain 24 different attributes and one class attribute that tells if the patient has the disease or not. The attributes are:
+Without any preprocessing our data set has 214 different instances that each contain 10 different attributes and one class attribute that tells us what kind of glass it is from the 7 possible options.
 
 | Nr. | Name | Type | Description |
 | --- | ---- | ---- | ----------- |
-| 1. | Age | numerical | Age in years. |
-| 2. | Blood Pressure | numerical | bp in mm/Hg. |
-| 3. | Specific Gravity | nominal | sg - (1.005,1.010,1.015,1.020,1.025). |
-| 4. | Albumin | nominal | al - (0,1,2,3,4,5). |
-| 5. | Sugar | nominal | su - (0,1,2,3,4,5). |
-| 6. | Red Blood Cells | nominal | rbc - (normal,abnormal)|
-| 7. | Pus Cell | nominal | pc - (normal,abnormal) |
-| 8. | Pus Cell clumps | nominal | pcc - (present,notpresent)|
-| 9. | Bacteria | nominal | ba - (present,notpresent)|
-| 10. | Blood Glucose Random | numerical | bgr in mgs/dl| 
-| 11. | Blood Urea | numerical | bu in mgs/dl| 
-| 12. | Serum Creatinine | numerical | sc in mgs/dl| 
-| 13. | Sodium | numerical | sod in mEq/L| 
-| 14. | Potassium | numerical | pot in mEq/L| 
-| 15. | Hemoglobin | numerical | hemo in gms| 
-| 16. | Packed Cell Volume | numerical | pcv| 
-| 17. | White Blood Cell Count | numerical | wc in cells/cumm| 
-| 18. | Red Blood Cell Count | numerical | rc in millions/cmm| 
-| 19. | Hypertension | nominal | htn - (yes,no)| 
-| 20. | Diabetes Mellitus | nominal | dm - (yes,no)| 
-| 21. | Coronary Artery Disease | nominal | cad - (yes,no)| 
-| 22. | Appetite | nominal | appet - (good,poor)| 
-| 23. | Pedal Edema | nominal | pe - (yes,no)|	
-| 24. | Anemia | nominal | ane - (yes,no)| 
-| 25. | Class | nominal | class - (ckd,notckd)|
-
-
-
+| 1. | Id| numerical | number: 1 to 214 |
+| 2. | RI| numerical | Refractive Index |
+| 3. | Na| numerical | Sodium |
+| 4. | Mg| numerical | Magnesium |
+| 5. | Al| numerical | Aluminum |
+| 6. | Si| numerical | Silicon |
+| 7. | K | numerical | Potassium |
+| 8. | Ca| numerical | Calcium|
+| 9. | Ba |numerical | Barium |
+| 10. |Fe |numerical | Iron| 
+| 11. | Class | nominal | class - (building_windows_float_processed,building_windows_non_float_processed,vehicle_windows_float_processed, vehicle_windows_non_float_processed,containers,tableware,headlamps)|
 
 #Preprocessing
 
+We began by looking at all our attributes and noticed that the first one **Id** is completely useless to us because it only numbers the instances which we don't need. We also noticed that the class attributes never results to the glass being *vehicle_windows_non_float_processed* for this dataset so we should get one fewer clusters in the final result. All other attributes seem like they might have some interesting information so we include them. 
 
 
 
@@ -66,16 +54,9 @@ The data set has 400 different instances that each contain 24 different attribut
 # read in data file
 glass <- read.csv("glass.csv")
 
-# random subsample from dataset
-randsample <- glass[sample(1:nrow(glass), 20 , replace=FALSE),]
+# remove the Id attribute
+glass <- glass[2:11]
 
-# running k-means with k = 3
-k.means.fit <- kmeans(randsample, 3)
-
-# plotting the clusters
-clusplot(randsample, k.means.fit$cluster,
-         main='2D representation of the Cluster solution',
-         color=TRUE, shade=TRUE, labels=2, lines=0)
 
 
 
@@ -86,38 +67,46 @@ clusplot(randsample, k.means.fit$cluster,
 
 ```{r test}
 
-# read in data file
-glass <- read.csv("glass.csv")
-
-# random subsample from dataset
-glass <- glass[sample(1:nrow(glass), 30 , replace=FALSE),]
-
 # Prepare Data
 glass <- na.omit(glass) # listwise deletion of missing
 glass <- scale(glass) # standardize variables
 
+
+# random subsample from dataset
+#randsample <- glass[sample(1:nrow(glass), 20 , replace=FALSE),]
+
+# running k-means with k = 3
+k.means.fit <- kmeans(glass, 6)
+
+# plotting the clusters
+clusplot(glass, k.means.fit$cluster,
+         main='2D representation of the Cluster solution',
+         color=TRUE, shade=TRUE, labels=2, lines=0)
+
+
+
 # Determine number of clusters
-wss <- (nrow(glass)-2)*sum(apply(glass,2,var))
-for (i in 2:15) wss[i] <- sum(kmeans(glass, 
-  	centers=i)$withinss)
-plot(1:15, wss, type="b", xlab="Number of Clusters",
-  ylab="Within groups sum of squares")
+#wss <- (nrow(glass)-2)*sum(apply(glass,2,var))
+#for (i in 2:15) wss[i] <- sum(kmeans(glass, 
+#  	centers=i)$withinss)
+#plot(1:15, wss, type="b", xlab="Number of Clusters",
+#  ylab="Within groups sum of squares")
 
 
 # K-Means Cluster Analysis k=5
-fit <- kmeans(glass, 7) 
+#fit <- kmeans(glass, 7) 
 # get cluster means 
-aggregate(glass,by=list(fit$cluster),FUN=mean)
+#aggregate(glass,by=list(fit$cluster),FUN=mean)
 # append cluster assignment
-glass <- data.frame(glass, fit$cluster)
+#glass <- data.frame(glass, fit$cluster)
 
 # Ward Hierarchical Clustering
-d <- dist(glass, method = "euclidean") # distance matrix
-fit <- hclust(d, method="ward.D") 
-plot(fit) # display dendogram
-groups <- cutree(fit, k=7) # cut tree into 5 clusters
+#d <- dist(glass, method = "euclidean") # distance matrix
+#fit <- hclust(d, method="ward.D") 
+#plot(fit) # display dendogram
+#groups <- cutree(fit, k=7) # cut tree into 5 clusters
 # draw dendogram with red borders around the 5 clusters 
-rect.hclust(fit, k=7, border="blue")
+#rect.hclust(fit, k=7, border="blue")
 
 ```
 
