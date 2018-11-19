@@ -56,11 +56,12 @@ We began by looking at all our attributes and noticed that the first one **Id** 
 # read in data file
 glass <- read.csv("glass.csv")
 
-# remove the Id attribute
-glass <- glass[2:11]
+# remove the Id and Class attribute
+glass <- glass[2:10]
 
-# normalizing the attributes
-glass[1,9] <- scale(glass[1,9])
+# normalizing all attributes 
+glass <- scale(glass)
+
 
 ```
 
@@ -112,64 +113,70 @@ glass_kmeans_error <- sum(glassClusterKmeans$withinss)
 
 ```
 
-53.47% of variability says that, with our data, more than half of the information about the multivariate data is captured by this plot of components 1 and 2.
+50.68% of variability says that, with our data, more than half of the information about the multivariate data is captured by this plot of components 1 and 2.
 
 
 
 ### 4. Hierarchical Clustering
 
-```{r results="hide",warning=FALSE}
-
-d_iris <- dist(glass) # method="man" # is a bit better
-hc_iris <- hclust(d_iris, method = "complete")
-iris_species <- rev(levels(iris[,5]))
+Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. By default, the complete linkage method is used.
 
 
-dend <- as.dendrogram(hc_iris)
-# order it the closest we can to the order of the observations:
-dend <- rotate(dend, 1:150)
+```{r hiearchy}
 
-# Color the branches based on the clusters:
-dend <- color_branches(dend, k=3) #, groupLabels=iris_species)
+fit_2 <- dist(glass, method = 'euclidean')
+d <- hclust(fit_2, method = "complete")
 
-# Manually match the labels, as much as possible, to the real classification of the flowers:
-labels_colors(dend) <-
-   rainbow_hcl(3)[sort_levels_values(
-      as.numeric(iris[,5])[order.dendrogram(dend)]
-   )]
+# Create a dendrogram object from the hclust variable
+dend <- as.dendrogram(d)
 
-# We shall add the flower type to the labels:
-labels(dend) <- paste(as.character(iris[,5])[order.dendrogram(dend)],
-                           "(",labels(dend),")", 
-                           sep = "")
-# We hang the dendrogram a bit:
-dend <- hang.dendrogram(dend,hang_height=0.1)
-# reduce the size of the labels:
-# dend <- assign_values_to_leaves_nodePar(dend, 0.5, "lab.cex")
-dend <- set(dend, "labels_cex", 0.5)
-# And plot:
-par(mar = c(3,3,3,7))
-plot(dend, 
-     main = "Clustered Iris data set
-     (the labels give the true flower species)", 
-     horiz =  TRUE,  nodePar = list(cex = .007))
-legend("topleft", legend = iris_species, fill = rainbow_hcl(6))
+# Color brances by cluster formed from the cut at a height of 6
+colDat <- color_branches(dend, h = 6)
+
+# Plot the dendrogram 
+plot(colDat)
+
+
+```
+
+The result from this is way too crowded and we can't really see anything so we can cut off the tree at the desired number of clusters using cutree and as shown before we know that the optimal number of clusters is around 6.
+
+```{r hiearchy_2}
+
+# distance matrix
+d <- dist(glass, method = "euclidean") 
+fit <- hclust(d) 
+
+# display dendogram
+plot(fit) 
+
+# cut tree into 6 clusters
+groups <- cutree(fit, k=6) 
+
+# draw dendogram with blue borders around the 6 clusters 
+rect.hclust(fit, k=6, border="blue")
+
+```
+
+
+The ouput after cutting the tree is still not very efficient we can't really tell any results from it, so we must..... ** Finna ehv til að laga þetta ! **
+
+
+```{r continue}
+
 
 
 
 ```
 
 
-
 ### 5. Comparison of K-means and Hierarchical
 
-# Ward Hierarchical Clustering
-d <- dist(glass, method = "euclidean") # distance matrix
-fit <- hclust(d, method="ward.D") 
-plot(fit) # display dendogram
-groups <- cutree(fit, k=7) # cut tree into 5 clusters
-# draw dendogram with red borders around the 5 clusters 
-rect.hclust(fit, k=7, border="blue")
+Before we compare the k-means and Hierarchial clustering we must acknowledge what differences thes two clustering methods have. Both have flaws and strengths such as the Hierarchical clustering can virtually handle any distance metric while k-means relys on euclidean distances. k-means doesn't have the same stability of results as Hierarchial because k-means requires a random step at its initialization that may yield different results if the process is re-run. That wouldn't be the case in hierarchical clustering.
+K-means is also less computationally expensive than hierarchical clustering and can be run on large datasets within a reasonable time frame, which is the main reason k-means is more popular. 
+The results we got indicated ....... ** samanburður á niðurstöðum hingað ** 
+
+
 
 
 
