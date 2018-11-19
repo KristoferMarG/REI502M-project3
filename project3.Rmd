@@ -59,66 +59,76 @@ glass <- glass[2:11]
 
 
 
-
 ```
 
-### 3. K-means and Hieracrhical clustering
+### 3. K-means clustering
+
+Now that we have finished preprocessing the next step is to run the k-means algorithm but first we need to find what number of clusters will give us the best result we accomplish this by plotting the sum of squares and seeing when the drop decreases. Since the initial cluster assignments are random, we need to set the seed to ensure reproducibility. 
+By plotting the sum of squares we can see that the drop of the y-axis decreases when the number of clusters is 6 this is ideal because the possible types of glass is also 6. 
 
 
-```{r test}
 
-# Prepare Data
-glass <- na.omit(glass) # listwise deletion of missing
-glass <- scale(glass) # standardize variables
-
-
-# random subsample from dataset
-#randsample <- glass[sample(1:nrow(glass), 20 , replace=FALSE),]
-
-# running k-means with k = 3
-k.means.fit <- kmeans(glass, 6)
-
-# plotting the clusters
-clusplot(glass, k.means.fit$cluster,
-         main='2D representation of the Cluster solution',
-         color=TRUE, shade=TRUE, labels=2, lines=0)
-
+```{r kmeans}
 
 
 # Determine number of clusters
-#wss <- (nrow(glass)-2)*sum(apply(glass,2,var))
-#for (i in 2:15) wss[i] <- sum(kmeans(glass, 
-#  	centers=i)$withinss)
-#plot(1:15, wss, type="b", xlab="Number of Clusters",
-#  ylab="Within groups sum of squares")
+wss <- (nrow(glass)-2)*sum(apply(glass,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(glass,centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters", ylab="sum of squares")
 
+# Ensuring reproducibility
+set.seed(20)
+# running k-means 
+glassCluster <- kmeans(glass, 6, nstart = 20, iter.max=100)
 
-# K-Means Cluster Analysis k=5
-#fit <- kmeans(glass, 7) 
-# get cluster means 
-#aggregate(glass,by=list(fit$cluster),FUN=mean)
-# append cluster assignment
-#glass <- data.frame(glass, fit$cluster)
-
-# Ward Hierarchical Clustering
-#d <- dist(glass, method = "euclidean") # distance matrix
-#fit <- hclust(d, method="ward.D") 
-#plot(fit) # display dendogram
-#groups <- cutree(fit, k=7) # cut tree into 5 clusters
-# draw dendogram with red borders around the 5 clusters 
-#rect.hclust(fit, k=7, border="blue")
 
 ```
 
+ 
+We used Principal component analysis (PCA) algorithm in **clusplot** to plot and view the clusters. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables.
 
+```{r hierarchical}
+
+
+#glass <- scale(glass) # standardize variables
+# random subsample from dataset
+#randsample <- glass[sample(1:nrow(glass), 20 , replace=FALSE),]
+
+
+# plotting the clusters
+clusplot(glass, glassCluster$cluster,
+         main='Cluster solution',
+         color=TRUE, shade=TRUE, labels=2, lines=0)
+
+
+# reviewing the total sum of errors 
+sum(glassCluster$withinss)
+
+
+
+```
+
+59.03% of variability says that, with our data, more than half of the information about the multivariate data is captured by this plot of components 1 and 2.
+
+
+
+### 4. Hierarchical Clustering
 
 ```{r results="hide",warning=FALSE}
 
+# Ward Hierarchical Clustering
+d <- dist(glass, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward.D") 
+plot(fit) # display dendogram
+groups <- cutree(fit, k=7) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters 
+rect.hclust(fit, k=7, border="blue")
+
 ```
 
 
 
-### 4. Comparisons of K-means and Hierarchical
+### 5. Comparison of K-means and Hierarchical
 
 
 
