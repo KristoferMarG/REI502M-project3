@@ -42,7 +42,13 @@ Without any preprocessing our data set has 214 different instances that each con
 | 8. | Ca| numerical | Calcium|
 | 9. | Ba |numerical | Barium |
 | 10. |Fe |numerical | Iron| 
-| 11. | Class | nominal | class - (building_windows_float_processed,building_windows_non_float_processed,vehicle_windows_float_processed, vehicle_windows_non_float_processed,containers,tableware,headlamps)|
+| 11. | Class | nominal | building_windows_float_processed, 
+|  |  |  |  building_windows_non_float_processed, 
+|  |  |  |  vehicle_windows_float_processed, 
+|  |  |  |  vehicle_windows_non_float_processed, 
+|  |  |  |  containers,
+|  |  |  |  tableware,
+|  |  |  |  headlamps|
 
 #Preprocessing
 
@@ -94,10 +100,6 @@ We used Principal component analysis (PCA) algorithm in **clusplot** to plot and
 ```{r hierarchical}
 
 
-#glass <- scale(glass) # standardize variables
-# random subsample from dataset
-#randsample <- glass[sample(1:nrow(glass), 20 , replace=FALSE),]
-
 
 # plotting the clusters
 clusplot(glass, glassClusterKmeans$cluster,
@@ -119,19 +121,20 @@ glass_kmeans_error <- sum(glassClusterKmeans$withinss)
 
 ### 4. Hierarchical Clustering
 
-Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. By default, the complete linkage method is used.
+Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. By default, the complete linkage method is used we changed it first to average but then realized that ward was better for this dataset.
 
 
 ```{r hiearchy}
 
+
 fit_2 <- dist(glass, method = 'euclidean')
-d <- hclust(fit_2, method = "complete")
+d <- hclust(fit_2, method = "ward.D")
 
 # Create a dendrogram object from the hclust variable
 dend <- as.dendrogram(d)
 
-# Color brances by cluster formed from the cut at a height of 6
-colDat <- color_branches(dend, h = 6)
+# Color brances by cluster formed from the cut at a height of 20
+colDat <- color_branches(dend, h = 20)
 
 # Plot the dendrogram 
 plot(colDat)
@@ -145,7 +148,7 @@ The result from this is way too crowded and we can't really see anything so we c
 
 # distance matrix
 d <- dist(glass, method = "euclidean") 
-fit <- hclust(d) 
+fit <- hclust(d, method = "ward.D") 
 
 # display dendogram
 plot(fit) 
@@ -159,12 +162,27 @@ rect.hclust(fit, k=6, border="blue")
 ```
 
 
-The ouput after cutting the tree is still not very efficient we can't really tell any results from it, so we must..... ** Finna ehv til að laga þetta ! **
+The ouput after cutting the tree is still not very efficient we can't really tell any results from it, so we decided to take a constant subsample out of the data. Now the graph is much clearer but it includes less information about the dataset.
 
 
 ```{r continue}
 
 
+# constant subsample from dataset
+subsample = glass[seq(1, nrow(glass), 5), ]
+
+
+fit_2 <- dist(subsample, method = 'euclidean')
+d <- hclust(fit_2, method = "ward.D")
+
+# Create a dendrogram object from the hclust variable
+dend <- as.dendrogram(d)
+
+# Color brances by cluster formed from the cut at a height of 11
+colDat <- color_branches(dend, h =6)
+
+# Plot the dendrogram 
+plot(colDat)
 
 
 ```
