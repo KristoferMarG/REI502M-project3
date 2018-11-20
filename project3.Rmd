@@ -24,8 +24,6 @@ library(colorspace) # get nice colors
 Our main obective was to determine with the highest possible accuracy what type of glass is found. Our ideal results would include 7 well defined clusters where each cluster would represent a glass type. The reason this can be found usefull is because of criminological investigations. Where at a scene of a crime glass can be correctly identified and possibly be used as valuable evidence.
 
 
-
-
 ### 2. Data set description
 
 Without any preprocessing our data set has 214 different instances that each contain 10 different attributes and one class attribute that tells us what kind of glass it is from the 7 possible options.
@@ -44,28 +42,31 @@ Without any preprocessing our data set has 214 different instances that each con
 | 10. |Fe |numerical | Iron| 
 | 11. | Class | nominal | class - (building_windows_float_processed,building_windows_non_float_processed,vehicle_windows_float_processed, vehicle_windows_non_float_processed,containers,tableware,headlamps)|
 
-#Preprocessing
+### 3. Preprocessing
 
-We began by looking at all our attributes and noticed that the first one **Id** is completely useless to us because it only numbers the instances which we don't need. We also noticed that the class attributes never results to the glass being *vehicle_windows_non_float_processed* for this dataset so we should get one fewer clusters in the final result. All other attributes seem like they might have some interesting information so we include them. It is also imperative to normalize the scale of feature values in order to begin with the clustering process. This is because each observations' feature values are represented as coordinates in n-dimensional space
+We began by looking at all our attributes and noticed that the first one **Id** is completely useless to us because it only numbers the instances which we don't need. We also took out the class variable so we can use that to evaluate our results. We also noticed that the class attributes never results to the glass being *vehicle_windows_non_float_processed* for this dataset so we should get one fewer clusters in the final result. All other attributes seem like they might have some interesting information so we include them. We plotted our data and removed some obvious outliers by hand. It is also imperative to normalize the scale of feature values in order to begin with the clustering process. This is because each observations' feature values are represented as coordinates in n-dimensional space
 
 
 
 ```{r data, tidy = TRUE}
 
 
-# read in data file
-glass <- read.csv("glass.csv")
+# read in data file, view outliers and remove the most obvious ones by hand.
+glass.full <- read.csv("glass.csv")
+plot(glass.full, col=glass.full$class)
+glass.full <- glass.full[-c(172, 173, 202, 107, 164, 208, 185, 175, 108, 186, 187),]
+plot(glass.full, col=glass.full$class)
 
 # remove the Id and Class attribute
-glass <- glass[2:10]
+glass <- glass.full[2:10]
 
 # normalizing all attributes 
 glass <- scale(glass)
-
-
 ```
+At this stage we try visualizing the data and coloring each point according to class. We can see that all the classes seem to be pretty spread out over the plots and there doesn't seem to be any particular pattern that could help us with the clustering. This could be a problem for us when it comes to clustering.
 
-### 3. K-means clustering
+
+### 4. K-means clustering
 
 Now that we have finished preprocessing the next step is to run the k-means algorithm but first we need to find what number of clusters that will give us the best result we accomplish this by plotting the sum of squares and seeing when the drop decreases. Since the initial cluster assignments are random, we need to set the seed to ensure reproducibility. 
 By plotting the sum of squares we can see that the drop of the y-axis decreases when the number of clusters is 6 this is ideal because the possible types of glass is also 6. 
@@ -74,30 +75,36 @@ By plotting the sum of squares we can see that the drop of the y-axis decreases 
 
 ```{r kmeans}
 
+for(i in 1:10) {
+# Ensuring reproducibility
+set.seed(i)
 
 # Determine number of clusters
 wss <- (nrow(glass)-2)*sum(apply(glass,2,var))
 for (i in 2:15) wss[i] <- sum(kmeans(glass,centers=i)$withinss)
+
 plot(1:15, wss, type="b", xlab="Number of Clusters", ylab="sum of squares")
 
-# Ensuring reproducibility
-set.seed(20)
 # running k-means 
-glassClusterKmeans <- kmeans(glass, 6, nstart = 20, iter.max=100)
+glassClusterKmeans <- kmeans(glass, 6, nstart = 20, iter.max=500)
 
+# Printing a table showing how the class labels fit compared to the clusters. 
+table(glassClusterKmeans$cluster, glass.full$class)
+}
+
+
+# The plot of our data with clusters represented with different colors.
+plot(glass.full, col=glassClusterKmeans$cluster)
+glassClusterKmeans
 
 ```
 
- 
-We used Principal component analysis (PCA) algorithm in **clusplot** to plot and view the clusters after the k-means algorithm. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables.
+Like we expected after looking at our data the kmeans clustering did not give us very good results. The clusters are mostly grouped together and it's very hard to see any distinction between them in any of the plots even when we look at them individually. The table shows that class is clearly reperesented by one cluster except for maybe class 7 which is mostly in cluster 3. 
+
+
+We decided to try and use Principal component analysis (PCA) algorithm in **clusplot** to plot and view the clusters after the k-means algorithm. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables. This gave us a similar plot which shows very little distinction between the clusters.
 
 ```{r hierarchical}
-
-
-#glass <- scale(glass) # standardize variables
-# random subsample from dataset
-#randsample <- glass[sample(1:nrow(glass), 20 , replace=FALSE),]
-
 
 # plotting the clusters
 clusplot(glass, glassClusterKmeans$cluster,
@@ -108,73 +115,110 @@ clusplot(glass, glassClusterKmeans$cluster,
 # reviewing the total sum of squared errors  
 glass_kmeans_error <- sum(glassClusterKmeans$withinss)
 
-
-
-
 ```
 
 50.68% of variability says that, with our data, more than half of the information about the multivariate data is captured by this plot of components 1 and 2.
 
-
-
-### 4. Hierarchical Clustering
+### 5. Hierarchical Clustering
 
 Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. By default, the complete linkage method is used.
 
 
 ```{r hiearchy}
 
-fit_2 <- dist(glass, method = 'euclidean')
-d <- hclust(fit_2, method = "complete")
+fit <- dist(glass, method = 'euclidean')
+d.ward <- hclust(fit, method = "ward.D")
+d.average <- hclust(fit, method = "average")
 
 # Create a dendrogram object from the hclust variable
-dend <- as.dendrogram(d)
+#dend <- as.dendrogram(d.ward)
 
 # Color brances by cluster formed from the cut at a height of 6
-colDat <- color_branches(dend, h = 6)
+colDat.ward <- color_branches(as.dendrogram(d.ward), h = 6)
+colDat.average <- color_branches(as.dendrogram(d.average), h = 6)
 
 # Plot the dendrogram 
-plot(colDat)
-
-
+plot(colDat.ward)
+plot(colDat.average)
+d
 ```
 
 The result from this is way too crowded and we can't really see anything so we can cut off the tree at the desired number of clusters using cutree and as shown before we know that the optimal number of clusters is around 6.
 
 ```{r hiearchy_2}
+#WARD
 
 # distance matrix
 d <- dist(glass, method = "euclidean") 
-fit <- hclust(d) 
+fit.ward <- hclust(d, method = "ward.D")
+#fit.average <- hclust(d, method = "average")
 
 # display dendogram
-plot(fit) 
+plot(fit.ward)
+#plot(fit.average)
 
 # cut tree into 6 clusters
-groups <- cutree(fit, k=6) 
+groups.ward <- cutree(fit.ward, k=6)
+#groups.average <- cutree(fit.average, k=6)
+
 
 # draw dendogram with blue borders around the 6 clusters 
-rect.hclust(fit, k=6, border="blue")
+rect.hclust(fit.ward, k=6, border="blue")
+#rect.hclust(fit.average, k=6, border = "blue")
+
+table(groups.ward, glass.full$class)
+
+# AVERAGE
+
+# distance matrix
+d <- dist(glass, method = "euclidean") 
+
+fit.average <- hclust(d, method = "average")
+
+# display dendogram
+plot(fit.average)
+
+# cut tree into 6 clusters
+groups.average <- cutree(fit.average, k=6)
+
+
+# draw dendogram with blue borders around the 6 clusters 
+rect.hclust(fit.average, k=6, border = "blue")
+
+table(groups.average, glass.full$class)
 
 ```
 
 
-The ouput after cutting the tree is still not very efficient we can't really tell any results from it, so we must..... ** Finna ehv til að laga þetta ! **
+The ouput after cutting the tree is still not very efficient we can't really tell any results from it. From the table we can see that most of the instances are put in to the first two clusters and the distribution in those clusters is pretty even between 2 to 3 classes.
 
+We tried making a dendogram from a subsample of our data to get a clearer graph which we could veryfy by looking at our data and it showed that there didn't seem to be any real correlation between the classes and the cluster.
 
 ```{r continue}
 
+# constant subsample from dataset
+subsample = glass[seq(1, nrow(glass), 5), ]
 
+fit_2 <- dist(subsample, method = 'euclidean')
+d <- hclust(fit_2, method = "ward.D")
 
+# Create a dendrogram object from the hclust variable
+dend <- as.dendrogram(d)
+
+# Color brances by cluster formed from the cut at a height of 11
+colDat <- color_branches(dend, h =6)
+
+# Plot the dendrogram 
+plot(colDat)
 
 ```
 
 
-### 5. Comparison of K-means and Hierarchical
+### 6. Comparison of K-means and Hierarchical
 
 Before we compare the k-means and Hierarchial clustering we must acknowledge what differences thes two clustering methods have. Both have flaws and strengths such as the Hierarchical clustering can virtually handle any distance metric while k-means relys on euclidean distances. k-means doesn't have the same stability of results as Hierarchial because k-means requires a random step at its initialization that may yield different results if the process is re-run. That wouldn't be the case in hierarchical clustering.
 K-means is also less computationally expensive than hierarchical clustering and can be run on large datasets within a reasonable time frame, which is the main reason k-means is more popular. 
-The results we got indicated ....... ** samanburður á niðurstöðum hingað ** 
+The results we got indicated that neither clustering algorithm was suitable for our data which might then in return imply that our data is just not suited for clustering
 
 
 
