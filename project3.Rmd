@@ -44,61 +44,83 @@ Without any preprocessing our data set has 214 different instances that each con
 
 ### 3. Preprocessing
 
-We began by looking at all our attributes and noticed that the first one **Id** is completely useless to us because it only numbers the instances which we don't need. We also took out the class variable so we can use that to evaluate our results. We also noticed that the class attributes never results to the glass being *vehicle_windows_non_float_processed* for this dataset so we should get one fewer clusters in the final result. All other attributes seem like they might have some interesting information so we include them. We plotted our data and removed some obvious outliers by hand. It is also imperative to normalize the scale of feature values in order to begin with the clustering process. This is because each observations' feature values are represented as coordinates in n-dimensional space
-
+We began by visualizing the data and coloring each point according to class. We can see that all the classes seem to be pretty spread out over the plots and there doesn't seem to be any particular pattern that could help us with the clustering but there are however a few obvious outliers. We remove them by hand and then the data looks a little bit better. At this stage we try looking at all our attributes and noticed that the first one **Id** is completely useless to us because it only numbers the instances which we don't need. We also took out the class variable so we can use that to evaluate our results. We also noticed that the class attributes never results to the glass being *vehicle_windows_non_float_processed* for this dataset so we should get one fewer clusters in the final result. All other attributes seem like they might have some interesting information so we include them.
+It is also imperative to normalize the scale of feature values in order to begin with the clustering process. This is because each observations' feature values are represented as coordinates in n-dimensional space
 
 
 ```{r data, tidy = TRUE}
-
-
-# read in data file, view outliers and remove the most obvious ones by hand.
+# Reading in data file and viewing our data
 glass.full <- read.csv("glass.csv")
 plot(glass.full, col=glass.full$class)
+
+# Removing some obvious outliers by hand
 glass.full <- glass.full[-c(172, 173, 202, 107, 164, 208, 185, 175, 108, 186, 187),]
 plot(glass.full, col=glass.full$class)
 
-# remove the Id and Class attribute
+# Removing the Id and Class attribute
 glass <- glass.full[2:10]
 
-# normalizing all attributes 
+# Normalizing all attributes 
 glass <- scale(glass)
 ```
-At this stage we try visualizing the data and coloring each point according to class. We can see that all the classes seem to be pretty spread out over the plots and there doesn't seem to be any particular pattern that could help us with the clustering. This could be a problem for us when it comes to clustering.
-
 
 ### 4. K-means clustering
 
 Now that we have finished preprocessing the next step is to run the k-means algorithm but first we need to find what number of clusters that will give us the best result we accomplish this by plotting the sum of squares and seeing when the drop decreases. Since the initial cluster assignments are random, we need to set the seed to ensure reproducibility. 
-By plotting the sum of squares we can see that the drop of the y-axis decreases when the number of clusters is 6 this is ideal because the possible types of glass is also 6. 
-
-
+By plotting the sum of squares with a few different seed values we can see that the drop of the y-axis decreases when the number of clusters is around 5 and 6 this is makes sense since the number of classes we have is 6.
 
 ```{r kmeans}
-
-for(i in 1:10) {
-# Ensuring reproducibility
-set.seed(i)
-
+# SEED = 12
+set.seed(12)
 # Determine number of clusters
-wss <- (nrow(glass)-2)*sum(apply(glass,2,var))
-for (i in 2:15) wss[i] <- sum(kmeans(glass,centers=i)$withinss)
+wss1 <- (nrow(glass)-2)*sum(apply(glass,2,var))
+for (i in 2:15) wss1[i] <- sum(kmeans(glass,centers=i)$withinss)
 
-plot(1:15, wss, type="b", xlab="Number of Clusters", ylab="sum of squares")
+# SEED = 23
+set.seed(23)
+# Determine number of clusters
+wss2 <- (nrow(glass)-2)*sum(apply(glass,2,var))
+for (i in 2:15) wss2[i] <- sum(kmeans(glass,centers=i)$withinss)
+
+# SEED = 34
+set.seed(34)
+# Determine number of clusters
+wss3 <- (nrow(glass)-2)*sum(apply(glass,2,var))
+for (i in 2:15) wss3[i] <- sum(kmeans(glass,centers=i)$withinss)
+
+# SEED = 45
+set.seed(45)
+# Determine number of clusters
+wss4 <- (nrow(glass)-2)*sum(apply(glass,2,var))
+for (i in 2:15) wss4[i] <- sum(kmeans(glass,centers=i)$withinss)
+
+# SEED = 56
+set.seed(56)
+# Determine number of clusters
+wss5 <- (nrow(glass)-2)*sum(apply(glass,2,var))
+for (i in 2:15) wss5[i] <- sum(kmeans(glass,centers=i)$withinss)
+
+# Plotting the graph
+plot(1:15, wss1, type="b", xlab="Number of Clusters", ylab="sum of squares")
+points(wss2, col='red', )
+points(wss3, col='blue')
+points(wss4, col='green')
+points(wss5, col='orange')
+```
+
+
+```{r}
+set.seed(12)
 
 # running k-means 
 glassClusterKmeans <- kmeans(glass, 6, nstart = 20, iter.max=500)
 
 # Printing a table showing how the class labels fit compared to the clusters. 
 table(glassClusterKmeans$cluster, glass.full$class)
-}
-
 
 # The plot of our data with clusters represented with different colors.
 plot(glass.full, col=glassClusterKmeans$cluster)
-glassClusterKmeans
-
 ```
-
 Like we expected after looking at our data the kmeans clustering did not give us very good results. The clusters are mostly grouped together and it's very hard to see any distinction between them in any of the plots even when we look at them individually. The table shows that class is clearly reperesented by one cluster except for maybe class 7 which is mostly in cluster 3. 
 
 
@@ -140,7 +162,6 @@ colDat.average <- color_branches(as.dendrogram(d.average), h = 6)
 # Plot the dendrogram 
 plot(colDat.ward)
 plot(colDat.average)
-d
 ```
 
 The result from this is way too crowded and we can't really see anything so we can cut off the tree at the desired number of clusters using cutree and as shown before we know that the optimal number of clusters is around 6.
