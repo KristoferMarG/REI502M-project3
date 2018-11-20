@@ -40,7 +40,13 @@ Without any preprocessing our data set has 214 different instances that each con
 | 8. | Ca| numerical | Calcium|
 | 9. | Ba |numerical | Barium |
 | 10. |Fe |numerical | Iron| 
-| 11. | Class | nominal | class - (building_windows_float_processed,building_windows_non_float_processed,vehicle_windows_float_processed, vehicle_windows_non_float_processed,containers,tableware,headlamps)|
+| 11. | Class | nominal | building_windows_float_processed, 
+|  |  |  |  building_windows_non_float_processed, 
+|  |  |  |  vehicle_windows_float_processed, 
+|  |  |  |  vehicle_windows_non_float_processed, 
+|  |  |  |  containers,
+|  |  |  |  tableware,
+|  |  |  |  headlamps|
 
 ### 3. Preprocessing
 
@@ -101,10 +107,13 @@ glassClusterKmeans
 
 Like we expected after looking at our data the kmeans clustering did not give us very good results. The clusters are mostly grouped together and it's very hard to see any distinction between them in any of the plots even when we look at them individually. The table shows that class is clearly reperesented by one cluster except for maybe class 7 which is mostly in cluster 3. 
 
+<<<<<<< HEAD
 
 We decided to try and use Principal component analysis (PCA) algorithm in **clusplot** to plot and view the clusters after the k-means algorithm. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables. This gave us a similar plot which shows very little distinction between the clusters.
 
 ```{r hierarchical}
+=======
+>>>>>>> 39a535860b5896457bbb85cfe80bb30088e85065
 
 # plotting the clusters
 clusplot(glass, glassClusterKmeans$cluster,
@@ -121,21 +130,32 @@ glass_kmeans_error <- sum(glassClusterKmeans$withinss)
 
 ### 5. Hierarchical Clustering
 
-Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. By default, the complete linkage method is used.
+Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. By default, the complete linkage method is used we changed it first to average but then realized that ward was better for this dataset.
 
 
 ```{r hiearchy}
 
+<<<<<<< HEAD
 fit <- dist(glass, method = 'euclidean')
 d.ward <- hclust(fit, method = "ward.D")
 d.average <- hclust(fit, method = "average")
+=======
+
+fit_2 <- dist(glass, method = 'euclidean')
+d <- hclust(fit_2, method = "ward.D")
+>>>>>>> 39a535860b5896457bbb85cfe80bb30088e85065
 
 # Create a dendrogram object from the hclust variable
 #dend <- as.dendrogram(d.ward)
 
+<<<<<<< HEAD
 # Color brances by cluster formed from the cut at a height of 6
 colDat.ward <- color_branches(as.dendrogram(d.ward), h = 6)
 colDat.average <- color_branches(as.dendrogram(d.average), h = 6)
+=======
+# Color brances by cluster formed from the cut at a height of 20
+colDat <- color_branches(dend, h = 20)
+>>>>>>> 39a535860b5896457bbb85cfe80bb30088e85065
 
 # Plot the dendrogram 
 plot(colDat.ward)
@@ -150,8 +170,12 @@ The result from this is way too crowded and we can't really see anything so we c
 
 # distance matrix
 d <- dist(glass, method = "euclidean") 
+<<<<<<< HEAD
 fit.ward <- hclust(d, method = "ward.D")
 #fit.average <- hclust(d, method = "average")
+=======
+fit <- hclust(d, method = "ward.D") 
+>>>>>>> 39a535860b5896457bbb85cfe80bb30088e85065
 
 # display dendogram
 plot(fit.ward)
@@ -190,7 +214,11 @@ table(groups.average, glass.full$class)
 ```
 
 
+<<<<<<< HEAD
 The ouput after cutting the tree is still not very efficient we can't really tell any results from it. From the table we can see that most of the instances are put in to the first two clusters and the distribution in those clusters is pretty even between 2 to 3 classes.
+=======
+The ouput after cutting the tree is still not very efficient we can't really tell any results from it, so we decided to take a constant subsample out of the data. Now the graph is much clearer but it includes less information about the dataset.
+>>>>>>> 39a535860b5896457bbb85cfe80bb30088e85065
 
 We tried making a dendogram from a subsample of our data to get a clearer graph which we could veryfy by looking at our data and it showed that there didn't seem to be any real correlation between the classes and the cluster.
 
@@ -202,11 +230,27 @@ subsample = glass[seq(1, nrow(glass), 5), ]
 fit_2 <- dist(subsample, method = 'euclidean')
 d <- hclust(fit_2, method = "ward.D")
 
+<<<<<<< HEAD
+=======
+# constant subsample from dataset
+subsample = glass[seq(1, nrow(glass), 5), ]
+
+
+fit_2 <- dist(subsample, method = 'euclidean')
+d <- hclust(fit_2, method = "ward.D")
+
+>>>>>>> 39a535860b5896457bbb85cfe80bb30088e85065
 # Create a dendrogram object from the hclust variable
 dend <- as.dendrogram(d)
 
 # Color brances by cluster formed from the cut at a height of 11
 colDat <- color_branches(dend, h =6)
+<<<<<<< HEAD
+=======
+
+# Plot the dendrogram 
+plot(colDat)
+>>>>>>> 39a535860b5896457bbb85cfe80bb30088e85065
 
 # Plot the dendrogram 
 plot(colDat)
