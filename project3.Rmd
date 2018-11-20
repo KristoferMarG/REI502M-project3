@@ -118,33 +118,17 @@ glassClusterKmeans <- kmeans(glass, 6, nstart = 20, iter.max=500)
 # Printing a table showing how the class labels fit compared to the clusters. 
 table(glassClusterKmeans$cluster, glass.full$class)
 
-# The plot of our data with clusters represented with different colors.
-plot(glass.full, col=glassClusterKmeans$cluster)
-```
-Like we expected after looking at our data the kmeans clustering did not give us very good results. The clusters are mostly grouped together and it's very hard to see any distinction between them in any of the plots even when we look at them individually. The table shows that class is clearly reperesented by one cluster except for maybe class 7 which is mostly in cluster 3. 
-
-
-We decided to try and use Principal component analysis (PCA) algorithm in **clusplot** to plot and view the clusters after the k-means algorithm. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables. This gave us a similar plot which shows very little distinction between the clusters.
-
-```{r hierarchical}
-
-# plotting the clusters
-clusplot(glass, glassClusterKmeans$cluster,
-         main='Cluster solution',
-         color=TRUE, shade=TRUE, labels=2, lines=0)
-
-
 # reviewing the total sum of squared errors  
 glass_kmeans_error <- sum(glassClusterKmeans$withinss)
+glass_kmeans_error
 
+# The plot of our data with clusters represented with different colors.
+plot(glass.full, col=glassClusterKmeans$cluster,)
 ```
-
-50.68% of variability says that, with our data, more than half of the information about the multivariate data is captured by this plot of components 1 and 2.
+Like we expected after looking at our data the kmeans clustering did not give us very good results. The clusters are mostly grouped together in bigger clusters and it's very hard to see any distinction between them in any of the plots even when we look at them individually. **Reikna entropy og purity**
 
 ### 5. Hierarchical Clustering
-
-Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. By default, the complete linkage method is used.
-
+Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. We decide too try both average and ward and to see which gives us a better result.
 
 ```{r hiearchy}
 
@@ -153,86 +137,40 @@ d.ward <- hclust(fit, method = "ward.D")
 d.average <- hclust(fit, method = "average")
 
 # Create a dendrogram object from the hclust variable
-#dend <- as.dendrogram(d.ward)
+dend.ward <- as.dendrogram(d.ward)
+dend.average <- as.dendrogram(d.average)
 
 # Color brances by cluster formed from the cut at a height of 6
-colDat.ward <- color_branches(as.dendrogram(d.ward), h = 6)
+colDat.ward <- color_branches(as.dendrogram(d.ward), h=6)
 colDat.average <- color_branches(as.dendrogram(d.average), h = 6)
 
 # Plot the dendrogram 
-plot(colDat.ward)
-plot(colDat.average)
+plot(dend.ward)
+plot(dend.average)
 ```
 
-The result from this is way too crowded and we can't really see anything so we can cut off the tree at the desired number of clusters using cutree and as shown before we know that the optimal number of clusters is around 6.
+The average method gives us a terrable result se we can just throw that away. When we look at the tree for the ward method we can see that a cut at height 6 could work well which makes sense because of our number of classes.
 
 ```{r hiearchy_2}
 #WARD
-
 # distance matrix
 d <- dist(glass, method = "euclidean") 
 fit.ward <- hclust(d, method = "ward.D")
-#fit.average <- hclust(d, method = "average")
 
 # display dendogram
 plot(fit.ward)
-#plot(fit.average)
 
 # cut tree into 6 clusters
 groups.ward <- cutree(fit.ward, k=6)
-#groups.average <- cutree(fit.average, k=6)
-
 
 # draw dendogram with blue borders around the 6 clusters 
 rect.hclust(fit.ward, k=6, border="blue")
-#rect.hclust(fit.average, k=6, border = "blue")
 
 table(groups.ward, glass.full$class)
-
-# AVERAGE
-
-# distance matrix
-d <- dist(glass, method = "euclidean") 
-
-fit.average <- hclust(d, method = "average")
-
-# display dendogram
-plot(fit.average)
-
-# cut tree into 6 clusters
-groups.average <- cutree(fit.average, k=6)
-
-
-# draw dendogram with blue borders around the 6 clusters 
-rect.hclust(fit.average, k=6, border = "blue")
-
-table(groups.average, glass.full$class)
-
 ```
 
 
-The ouput after cutting the tree is still not very efficient we can't really tell any results from it. From the table we can see that most of the instances are put in to the first two clusters and the distribution in those clusters is pretty even between 2 to 3 classes.
-
-We tried making a dendogram from a subsample of our data to get a clearer graph which we could veryfy by looking at our data and it showed that there didn't seem to be any real correlation between the classes and the cluster.
-
-```{r continue}
-
-# constant subsample from dataset
-subsample = glass[seq(1, nrow(glass), 5), ]
-
-fit_2 <- dist(subsample, method = 'euclidean')
-d <- hclust(fit_2, method = "ward.D")
-
-# Create a dendrogram object from the hclust variable
-dend <- as.dendrogram(d)
-
-# Color brances by cluster formed from the cut at a height of 11
-colDat <- color_branches(dend, h =6)
-
-# Plot the dendrogram 
-plot(colDat)
-
-```
+The ouput after cutting the tree is still not very efficient we can't really tell any results from it. From the table we can see that most of the instances are put in to the first two clusters and the distribution in those clusters is pretty even between 2 to 3 classes. **Reikna entropy og purity**
 
 
 ### 6. Comparison of K-means and Hierarchical
