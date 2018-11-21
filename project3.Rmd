@@ -16,15 +16,17 @@ knitr::opts_chunk$set(echo = TRUE)
 library(cluster)
 library(merTools)
 library(dendextend)
-library(colorspace) # get nice colors
+library(entropy)
+library(clValid)
+
 ```
 
-### 1. Objectives
+## 1. Objectives
 
 Our main obective was to determine with the highest possible accuracy what type of glass is found. Our ideal results would include 7 well defined clusters where each cluster would represent a glass type. The reason this can be found usefull is because of criminological investigations. Where at a scene of a crime glass can be correctly identified and possibly be used as valuable evidence.
 
 
-### 2. Data set description
+## 2. Data set description
 
 Without any preprocessing our data set has 214 different instances that each contain 10 different attributes and one class attribute that tells us what kind of glass it is from the 7 possible options.
 
@@ -42,7 +44,7 @@ Without any preprocessing our data set has 214 different instances that each con
 | 10. |Fe |numerical | Iron| 
 | 11. | Class | nominal | class - (building_windows_float_processed,building_windows_non_float_processed,vehicle_windows_float_processed, vehicle_windows_non_float_processed,containers,tableware,headlamps)|
 
-### 3. Preprocessing
+## 3. Preprocessing
 
 We began by visualizing the data and coloring each point according to class. We can see that all the classes seem to be pretty spread out over the plots and there doesn't seem to be any particular pattern that could help us with the clustering but there are however a few obvious outliers. We remove them by hand and then the data looks a little bit better. At this stage we try looking at all our attributes and noticed that the first one **Id** is completely useless to us because it only numbers the instances which we don't need. We also took out the class variable so we can use that to evaluate our results. We also noticed that the class attributes never results to the glass being *vehicle_windows_non_float_processed* for this dataset so we should get one fewer clusters in the final result. All other attributes seem like they might have some interesting information so we include them.
 It is also imperative to normalize the scale of feature values in order to begin with the clustering process. This is because each observations' feature values are represented as coordinates in n-dimensional space
@@ -64,44 +66,39 @@ glass <- glass.full[2:10]
 glass <- scale(glass)
 ```
 
-### 4. K-means clustering
-
+## 4. K-means clustering
 Now that we have finished preprocessing the next step is to run the k-means algorithm but first we need to find what number of clusters that will give us the best result we accomplish this by plotting the sum of squares and seeing when the drop decreases. Since the initial cluster assignments are random, we need to set the seed to ensure reproducibility. 
 By plotting the sum of squares with a few different seed values we can see that the drop of the y-axis decreases when the number of clusters is around 5 and 6 this is makes sense since the number of classes we have is 6.
 
 ```{r kmeans}
+# Determining the number of clusters
 # SEED = 12
 set.seed(12)
-# Determine number of clusters
 wss1 <- (nrow(glass)-2)*sum(apply(glass,2,var))
 for (i in 2:15) wss1[i] <- sum(kmeans(glass,centers=i)$withinss)
 
 # SEED = 23
 set.seed(23)
-# Determine number of clusters
 wss2 <- (nrow(glass)-2)*sum(apply(glass,2,var))
 for (i in 2:15) wss2[i] <- sum(kmeans(glass,centers=i)$withinss)
 
 # SEED = 34
 set.seed(34)
-# Determine number of clusters
 wss3 <- (nrow(glass)-2)*sum(apply(glass,2,var))
 for (i in 2:15) wss3[i] <- sum(kmeans(glass,centers=i)$withinss)
 
 # SEED = 45
 set.seed(45)
-# Determine number of clusters
 wss4 <- (nrow(glass)-2)*sum(apply(glass,2,var))
 for (i in 2:15) wss4[i] <- sum(kmeans(glass,centers=i)$withinss)
 
 # SEED = 56
 set.seed(56)
-# Determine number of clusters
 wss5 <- (nrow(glass)-2)*sum(apply(glass,2,var))
 for (i in 2:15) wss5[i] <- sum(kmeans(glass,centers=i)$withinss)
 
 # Plotting the graph
-plot(1:15, wss1, type="b", xlab="Number of Clusters", ylab="sum of squares")
+plot(1:15, wss1, type="b", xlab="Number of Clusters", ylab="Sum of squares")
 points(wss2, col='red', )
 points(wss3, col='blue')
 points(wss4, col='green')
@@ -118,16 +115,23 @@ glassClusterKmeans <- kmeans(glass, 6, nstart = 20, iter.max=500)
 # Printing a table showing how the class labels fit compared to the clusters. 
 table(glassClusterKmeans$cluster, glass.full$class)
 
-# reviewing the total sum of squared errors  
-glass_kmeans_error <- sum(glassClusterKmeans$withinss)
-glass_kmeans_error
+# Getting the SSE for each cluster
+glassClusterKmeans$withinss
+# The SSE sum
+sum(glassClusterKmeans$withinss)
+# Getting the BSS
+glassClusterKmeans$betweenss
 
 # The plot of our data with clusters represented with different colors.
-plot(glass.full, col=glassClusterKmeans$cluster,)
+glass.full$kcluster <- glassClusterKmeans$cluster
+plot(glass.full, col=glassClusterKmeans$cluster)
 ```
-Like we expected after looking at our data the kmeans clustering did not give us very good results. The clusters are mostly grouped together in bigger clusters and it's very hard to see any distinction between them in any of the plots even when we look at them individually. **Reikna entropy og purity**
+\
+Like we expected after looking at our data the kmeans clustering did not give us very good results. The clusters are mostly grouped together in bigger clusters and it's very hard to see any distinction between them in any of the plots even when we look at each of the plots individually. The SSE is 610.9364 and the BSS is 1207.064.
+\
+![Entropy and purity table for kmeans clusterind](kmeans.png)
 
-### 5. Hierarchical Clustering
+## 5. Hierarchical Clustering
 Next we use *hclust* to calculate and plot the Hierarchical Clustering with the already preproccessed data. *hclust* requires us to provide the data in the form of a distance matrix. We can do this by using *dist*. We decide too try both average and ward and to see which gives us a better result.
 
 ```{r hiearchy}
@@ -140,19 +144,15 @@ d.average <- hclust(fit, method = "average")
 dend.ward <- as.dendrogram(d.ward)
 dend.average <- as.dendrogram(d.average)
 
-# Color brances by cluster formed from the cut at a height of 6
-colDat.ward <- color_branches(as.dendrogram(d.ward), h=6)
-colDat.average <- color_branches(as.dendrogram(d.average), h = 6)
-
 # Plot the dendrogram 
 plot(dend.ward)
 plot(dend.average)
+
 ```
 
-The average method gives us a terrable result se we can just throw that away. When we look at the tree for the ward method we can see that a cut at height 6 could work well which makes sense because of our number of classes.
+The average method gives us a terrable result so we can just throw that away. When we look at the tree for the ward method we can see that a cut at height 6 could work well which makes sense because of our number of classes. We decide to cut it there and look at the distribution between the clusters and classes.
 
 ```{r hiearchy_2}
-#WARD
 # distance matrix
 d <- dist(glass, method = "euclidean") 
 fit.ward <- hclust(d, method = "ward.D")
@@ -167,17 +167,34 @@ groups.ward <- cutree(fit.ward, k=6)
 rect.hclust(fit.ward, k=6, border="blue")
 
 table(groups.ward, glass.full$class)
+glass.full$hcluster <- groups.ward
+plot(glass.full, col=groups.ward)
 ```
+\
+From the table we can see that most of the instances are put in to the first two clusters and the distribution in those clusters is pretty even between 2 to 3 classes.
+\
+![Entropy and purity table for hiarical clusterind](hclust.png)
 
 
-The ouput after cutting the tree is still not very efficient we can't really tell any results from it. From the table we can see that most of the instances are put in to the first two clusters and the distribution in those clusters is pretty even between 2 to 3 classes. **Reikna entropy og purity**
-
-
-### 6. Comparison of K-means and Hierarchical
+## 6. Comparison of K-means and Hierarchical
 
 Before we compare the k-means and Hierarchial clustering we must acknowledge what differences thes two clustering methods have. Both have flaws and strengths such as the Hierarchical clustering can virtually handle any distance metric while k-means relys on euclidean distances. k-means doesn't have the same stability of results as Hierarchial because k-means requires a random step at its initialization that may yield different results if the process is re-run. That wouldn't be the case in hierarchical clustering.
-K-means is also less computationally expensive than hierarchical clustering and can be run on large datasets within a reasonable time frame, which is the main reason k-means is more popular. 
-The results we got indicated that neither clustering algorithm was suitable for our data which might then in return imply that our data is just not suited for clustering
+K-means is also less computationally expensive than hierarchical clustering and can be run on large datasets within a reasonable time frame, which is the main reason k-means is more popular.  
+
+###External measures
+\
+![Entropy and purity of both clusterings](EPcompare.png)
+\
+
+###Internal measures
+
+
+The K-means clustering gave us lower entropy and a little bit higher purity which indicates that it is better than the hierarical clustering for our data. We were not sure how to calculate the SSE and BSS for the hierarchial clustering so we couldn't compare them on those measures.
+
+
+
+
+
 
 
 
