@@ -23,7 +23,7 @@ library(clValid)
 
 ## 1. Objectives
 
-Our main obective was to determine with the highest possible accuracy what type of glass is found. Our ideal results would include 7 well defined clusters where each cluster would represent a glass type. The reason this can be found usefull is because of criminological investigations. Where at a scene of a crime glass can be correctly identified and possibly be used as valuable evidence.
+Our main objective was to determine with the highest possible accuracy what type of glass is found. Our ideal results would include 7 well defined clusters where each cluster would represent a glass type. The reason this can be found useful is because of criminological investigations. Where at a scene of a crime glass can be correctly identified and possibly be used as valuable evidence.
 
 
 ## 2. Data set description
@@ -99,7 +99,7 @@ for (i in 2:15) wss5[i] <- sum(kmeans(glass,centers=i)$withinss)
 
 # Plotting the graph
 plot(1:15, wss1, type="b", xlab="Number of Clusters", ylab="Sum of squares")
-points(wss2, col='red', )
+points(wss2, col='red' )
 points(wss3, col='blue')
 points(wss4, col='green')
 points(wss5, col='orange')
@@ -150,7 +150,7 @@ plot(dend.average)
 
 ```
 
-The average method gives us a terrable result so we can just throw that away. When we look at the tree for the ward method we can see that a cut at height 6 could work well which makes sense because of our number of classes. We decide to cut it there and look at the distribution between the clusters and classes.
+The average method gives us a terrible result so we can just throw that away. When we look at the tree for the ward method we can see that a cut at height 6 could work well which makes sense because of our number of classes. We decide to cut it there and look at the distribution between the clusters and classes.
 
 ```{r hiearchy_2}
 # distance matrix
